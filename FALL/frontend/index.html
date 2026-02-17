@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AI Fall Detection Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            width: 400px;
+            margin: auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        #result {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        #time {
+            margin-top: 15px;
+            color: gray;
+            font-size: 14px;
+        }
+
+        .normal {
+            color: green;
+        }
+
+        .fall {
+            color: red;
+        }
+
+        .offline {
+            color: orange;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>AI Fall Detection System</h1>
+
+    <div class="card">
+        <h2>Status</h2>
+        <p id="result">Waiting...</p>
+        <p id="time"></p>
+    </div>
+
+    <script>
+        async function fetchStatus() {
+            try {
+                const response = await fetch("http://127.0.0.1:5000/status");
+                const data = await response.json();
+
+                const resultElement = document.getElementById("result");
+                const timeElement = document.getElementById("time");
+
+                if (data.last_prediction === 1) {
+                    resultElement.innerText = "🚨 FALL DETECTED!";
+                    resultElement.className = "fall";
+                } else {
+                    resultElement.innerText = "✅ Normal";
+                    resultElement.className = "normal";
+                }
+
+                if (data.last_updated) {
+                    timeElement.innerText = "Last Updated: " + data.last_updated;
+                } else {
+                    timeElement.innerText = "Waiting for data...";
+                }
+
+            } catch (error) {
+                document.getElementById("result").innerText = "⚠ Backend Offline";
+                document.getElementById("result").className = "offline";
+            }
+        }
+
+        // Update every 2 seconds
+        setInterval(fetchStatus, 2000);
+
+        // Run immediately
+        fetchStatus();
+    </script>
+
+</body>
+</html>
