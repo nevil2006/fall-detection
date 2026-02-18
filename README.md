@@ -42,12 +42,14 @@ Falls are a major risk for elderly patients living alone. Delayed medical respon
 - Remote patient monitoring
 
 ---
+##  Simulation with Wokwi
 
-##  Simulation
-This project includes a **Wokwi simulation** for testing ESP32 and sensors without physical hardware.
+You can try out the fall detection system on a virtual ESP32 using Wokwi simulation!
 
- **Wokwi Simulation Link:**  
-[ *([Add link here after creating Wokwi project](https://wokwi.com/projects/456193674115960833] )*]
+ **Live Simulation:**  
+https://wokwi.com/projects/456193674115960833
+
+Click the link above to open the simulation — no hardware required.
 
 ---
 
