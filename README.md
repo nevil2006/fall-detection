@@ -47,9 +47,8 @@ Falls are a major risk for elderly patients living alone. Delayed medical respon
 This project includes a **Wokwi simulation** for testing ESP32 and sensors without physical hardware.
 
  **Wokwi Simulation Link:**  
-[ *(Add link here after creating Wokwi project)*
-](https://wokwi.com/projects/456193674115960833
-)
+[ *([Add link here after creating Wokwi project](https://wokwi.com/projects/456193674115960833] )*]
+
 ---
 
 ##  Tech Stack
