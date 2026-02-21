@@ -1,0 +1,153 @@
+#include <Wire.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <LiquidCrystal_I2C.h>
+
+Adafruit_MPU6050 mpu;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+#define BUZZER 25
+
+// -------- Thresholds --------
+#define FREE_FALL_THRESHOLD 5.0
+#define IMPACT_THRESHOLD 7.5
+#define HIGH_IMPACT_THRESHOLD 11.0
+#define STABLE_THRESHOLD 2.0
+
+// -------- Timing --------
+#define IMPACT_WINDOW 700
+#define STABLE_TIME 2000
+#define AUTO_RESET_TIME 10000
+
+// -------- State Machine --------
+enum FallState {
+  NORMAL,
+  FREE_FALL,
+  IMPACT_DETECTED,
+  FALL_CONFIRMED
+};
+
+FallState currentState = NORMAL;
+
+unsigned long stateStartTime = 0;
+unsigned long lastLCDUpdate = 0;
+
+bool fallDetected = false;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);
+
+  pinMode(BUZZER, OUTPUT);
+  digitalWrite(BUZZER, LOW);
+
+  lcd.init();
+  lcd.backlight();
+
+  if (!mpu.begin()) {
+    lcd.print("MPU Error!");
+    while (1);
+  }
+
+  lcd.print("System Ready");
+  delay(1500);
+  lcd.clear();
+
+  Serial.println("=== FALL DETECTION SYSTEM STARTED ===");
+}
+
+void loop() {
+
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  float totalAcc = sqrt(
+    a.acceleration.x * a.acceleration.x +
+    a.acceleration.y * a.acceleration.y +
+    a.acceleration.z * a.acceleration.z
+  );
+
+  Serial.print("Acceleration: ");
+  Serial.println(totalAcc);
+
+  // -------- FALL DETECTION LOGIC --------
+  switch (currentState) {
+
+    case NORMAL:
+      fallDetected = false;
+
+      if (totalAcc > HIGH_IMPACT_THRESHOLD) {
+        currentState = FALL_CONFIRMED;
+        stateStartTime = millis();
+        fallDetected = true;
+        break;
+      }
+
+      if (totalAcc < FREE_FALL_THRESHOLD) {
+        currentState = FREE_FALL;
+        stateStartTime = millis();
+      }
+      break;
+
+    case FREE_FALL:
+      if (millis() - stateStartTime < IMPACT_WINDOW) {
+        if (totalAcc > IMPACT_THRESHOLD) {
+          currentState = IMPACT_DETECTED;
+          stateStartTime = millis();
+        }
+      } else {
+        currentState = NORMAL;
+      }
+      break;
+
+    case IMPACT_DETECTED:
+      if (totalAcc < STABLE_THRESHOLD) {
+        if (millis() - stateStartTime > STABLE_TIME) {
+          currentState = FALL_CONFIRMED;
+          stateStartTime = millis();
+          fallDetected = true;
+        }
+      } else {
+        currentState = NORMAL;
+      }
+      break;
+
+    case FALL_CONFIRMED:
+      fallDetected = true;
+
+      if (millis() - stateStartTime > AUTO_RESET_TIME) {
+        currentState = NORMAL;
+        fallDetected = false;
+      }
+      break;
+  }
+
+  // -------- BUZZER --------
+  if (fallDetected) {
+    digitalWrite(BUZZER, HIGH);
+  } else {
+    digitalWrite(BUZZER, LOW);
+  }
+
+  // -------- LCD --------
+  if (millis() - lastLCDUpdate > 500) {
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Acc:");
+    lcd.print(totalAcc, 1);
+
+    lcd.setCursor(0, 1);
+
+    if (fallDetected) {
+      lcd.print("FALL DETECTED");
+      Serial.println(">>> FALL DETECTED <<<");
+    } else {
+      lcd.print("Normal");
+    }
+
+    lastLCDUpdate = millis();
+  }
+
+  delay(50);
+}
